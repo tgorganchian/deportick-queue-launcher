@@ -64,21 +64,29 @@ powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset   # Windows
 
 ## How many windows
 
-**10–12, 20 at most.** RAM is not the limit on a recent MacBook. These are:
+More windows means more places in line, but each one gets smaller. The script
+tiles ~500px-wide columns (Chrome's minimum width, measured) and picks the
+fewest rows, up to 4, that fit every window side by side. On a typical
+laptop-size or 1080p screen (3 columns):
 
-- **Screen.** The script reads the screen size (all screens, per-screen scaling
-  on Windows). It tiles ~500px-wide columns (Chrome's minimum width, measured)
-  and picks the fewest rows, up to 4, that fit every window side by side. The
-  more windows, the smaller each one:
+| Windows per screen | Grid | Looks |
+|---|---|---|
+| 9 | 3 × 3 | Comfortable. The page is readable. |
+| 12 | 3 × 4 | Tight: little more than the tab bar and page header. Still enough to spot the window that gets through. |
 
-  | Setup | 2 rows | 3 rows | 4 rows (max) |
-  |---|---|---|---|
-  | MacBook Pro 14"/16" | 6 | 9 | 12 (~235px tall) |
-  | 1080p monitor + 1080p laptop | 12 | 18 | 24 |
+Even when a window is small you can tell it got through: the page switches from
+the Queue-it waiting room to Deportick, and the tab title changes. Past 4 rows,
+extra windows stack over the same slots, offset 40px.
 
-  Past the 4-row limit, extra windows stack over the same slots, offset 40px.
-  Even when a window is small you can tell it got through: the page switches
-  from the Queue-it waiting room to Deportick, and the tab title changes.
+**Several monitors (Windows only for now):** the grid spans every screen, so the
+count scales with the number of monitors (e.g. 2 screens → 18 at 3 × 3). The
+limit then is the machine, not the screen: each window is a full browser
+instance, so watch RAM and CPU. If windows start loading slowly, you've
+opened too many. On macOS the script still treats the whole desktop as one screen,
+so stick to the laptop screen there.
+
+Other limits:
+
 - **Captchas.** Deportick loads reCAPTCHA and Turnstile. If each window has to
   solve one to enter the queue, 30 windows means minutes of captchas.
 - **Detection.** Many sessions from one IP make it more likely Queue-it flags you.
