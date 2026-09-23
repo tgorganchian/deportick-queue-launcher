@@ -87,11 +87,15 @@ public static class Screens {
 '@
 
 # Tile windows over every screen: as many ~500px-wide columns as fit (Chrome's minimum width)
-# and 2 rows. Windows beyond that fill the same slots again, cascaded 40px.
-$slots = foreach ($a in [Screens]::WorkAreas()) {
+# and the fewest rows (up to 4, ~250px tall) that fit every window side by side.
+# Windows beyond that fill the same slots again, cascaded 40px.
+$areas = [Screens]::WorkAreas()
+$colsTotal = ($areas | ForEach-Object { [math]::Max(1, [math]::Floor($_[2] / 500)) } | Measure-Object -Sum).Sum
+$rows = [math]::Min(4, [math]::Ceiling($Count / $colsTotal))
+$slots = foreach ($a in $areas) {
     $cols = [math]::Max(1, [math]::Floor($a[2] / 500))
-    $w = [math]::Floor($a[2] / $cols); $h = [math]::Floor($a[3] / 2)
-    for ($r = 0; $r -lt 2; $r++) {
+    $w = [math]::Floor($a[2] / $cols); $h = [math]::Floor($a[3] / $rows)
+    for ($r = 0; $r -lt $rows; $r++) {
         for ($c = 0; $c -lt $cols; $c++) { @{ X = $a[0] + $c * $w; Y = $a[1] + $r * $h; W = $w; H = $h } }
     }
 }

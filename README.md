@@ -66,10 +66,19 @@ powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset   # Windows
 
 **10–12, 20 at most.** RAM is not the limit on a recent MacBook. These are:
 
-- **Screen.** The script reads the screen size (all screens, per-screen scaling on Windows) and tiles ~500px-wide
-  windows in 2 rows. On a 14"/16" MacBook Pro that's 6 side by side. Windows
-  7–12 are stacked over those slots, offset 40px. Past ~12 you can't tell which
-  one got through.
+- **Screen.** The script reads the screen size (all screens, per-screen scaling
+  on Windows). It tiles ~500px-wide columns (Chrome's minimum width, measured)
+  and picks the fewest rows, up to 4, that fit every window side by side. The
+  more windows, the smaller each one:
+
+  | Setup | 2 rows | 3 rows | 4 rows (max) |
+  |---|---|---|---|
+  | MacBook Pro 14"/16" | 6 | 9 | 12 (~235px tall) |
+  | 1080p monitor + 1080p laptop | 12 | 18 | 24 |
+
+  Past the 4-row limit, extra windows stack over the same slots, offset 40px.
+  Even when a window is small you can tell it got through: the page switches
+  from the Queue-it waiting room to Deportick, and the tab title changes.
 - **Captchas.** Deportick loads reCAPTCHA and Turnstile. If each window has to
   solve one to enter the queue, 30 windows means minutes of captchas.
 - **Detection.** Many sessions from one IP make it more likely Queue-it flags you.
@@ -108,7 +117,7 @@ so decide early, ideally right when the waiting room opens.
 | Windows open with isolated profiles | ✅ tested | ⚠️ not run yet |
 | Login carries over to cloned windows | ✅ tested with a real account | ⚠️ not run yet |
 | Queue-it cookies cleared, other cookies kept | ✅ tested with dummy cookies | ⚠️ not run yet |
-| Window tiling fits the screen | ✅ tested on 2 screens with mixed scaling (100% + 125%) | ⚠️ math checked for 14"/16", not run yet |
+| Window tiling fits the screen | ✅ tested on 2 screens with mixed scaling (100% + 125%), 12 and 18 windows | ⚠️ math checked for 14"/16", not run yet |
 | Distinct QueueId per window | ⏳ only verifiable once the queue is live | ⏳ |
 
 On macOS, do a dry run the day before: `--setup`, log in, quit, then launch 3

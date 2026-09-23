@@ -49,12 +49,14 @@ if [ "$SETUP" = false ] && [ -d "$MAIN" ]; then
 fi
 
 # Tile windows over the screen: as many ~500px-wide columns as fit (Chrome's minimum width)
-# and 2 rows. Windows beyond that fill the same slots again, cascaded 40px so they stay visible.
+# and the fewest rows (up to 4, ~250px tall) that fit every window side by side.
+# Windows beyond that fill the same slots again, cascaded 40px so they stay visible.
 BOUNDS=$(osascript -e 'tell application "Finder" to get bounds of window of desktop' 2>/dev/null)
 SCREEN_W=$(echo "$BOUNDS" | cut -d, -f3 | tr -d ' '); SCREEN_W=${SCREEN_W:-1512}
 SCREEN_H=$(echo "$BOUNDS" | cut -d, -f4 | tr -d ' '); SCREEN_H=${SCREEN_H:-982}
 MENU_BAR=40
-COLS=$(( SCREEN_W / 500 )); ROWS=2; SLOTS=$(( COLS * ROWS ))
+COLS=$(( SCREEN_W / 500 )); ROWS=$(( (COUNT + COLS - 1) / COLS )); (( ROWS > 4 )) && ROWS=4
+SLOTS=$(( COLS * ROWS ))
 W=$(( SCREEN_W / COLS )); H=$(( (SCREEN_H - MENU_BAR) / ROWS ))
 echo "Screen ${SCREEN_W}x${SCREEN_H}: ${SLOTS} windows fit side by side."
 for ((i = 0; i < COUNT; i++)); do
