@@ -1,0 +1,83 @@
+# deportick-queue-launcher
+
+Opens several isolated Chrome windows so each one takes its own place in the
+Deportick waiting room. **It does not buy anything**: you check out by hand in
+whichever window gets through first.
+
+Built for **Argentina vs Benin**, on sale **Thursday 2026-09-24, 18:00 ART**
+([AFA info page](https://www.deportick.com/static/afaproxpartidos)).
+Based on the idea behind [fpiantoni/ticketing-Script-Invoker](https://github.com/fpiantoni/ticketing-Script-Invoker).
+
+## How it works
+
+- Deportick runs on Crowder with **Queue-it** as its waiting room. Your place in
+  line is the Queue-it `QueueId`, stored in Queue-it cookies, not in the
+  Deportick session.
+- You log in once (`profile-0`). Each extra window is a fresh Chrome profile
+  that only receives `profile-0`'s cookies and localStorage. Deportick stores
+  the login in localStorage (`crowder`, `crowder-user`), not in a cookie.
+- Before launching, Queue-it cookies (`*queue-it*`, `QueueIT*`) are deleted from
+  every profile, so each window is assigned a fresh `QueueId`.
+- Profiles live in `profiles/` (gitignored). They contain your login token, so
+  don't share them.
+
+## Requirements
+
+- Google Chrome in its default install path.
+- Windows: PowerShell 5.1+ and Python 3 on `PATH` (used to clear the cookie SQLite DB).
+- macOS: nothing extra (`sqlite3` ships with macOS).
+
+## Usage
+
+**1. Before the sale: log in once.** A single window opens. Log in, then fully
+quit Chrome (on macOS: `Cmd+Q`). Profiles can't be copied while Chrome is running.
+
+```bash
+# macOS
+bash macos/launch.sh --setup
+# Windows
+powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Setup
+```
+
+**2. At ~17:55: launch the windows.** Use the `/event/...` URL once Deportick
+publishes it. If it isn't out yet, use the info page and click through in each window.
+
+```bash
+# macOS
+bash macos/launch.sh "https://www.deportick.com/event/<event>" 5
+# Windows
+powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Url "https://www.deportick.com/event/<event>" -Count 5
+```
+
+**3. In the queue:**
+- Check the **Queue ID** shown at the bottom of each waiting room page. They must all be different.
+- Don't refresh, and don't close the windows or re-run the script once they're queued.
+  A re-run starts from scratch.
+- Buy in **one** window only. If there's a per-account/DNI limit, parallel orders can get cancelled.
+
+**Reset** (wipe all profiles and the saved login):
+
+```bash
+bash macos/launch.sh --reset        # macOS
+powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset   # Windows
+```
+
+## Status
+
+| | Windows | macOS |
+|---|---|---|
+| Windows open with isolated profiles | ✅ tested | ⚠️ not run yet |
+| Login carries over to cloned windows | ✅ tested with a real account | ⚠️ not run yet |
+| Queue-it cookies cleared, other cookies kept | ✅ tested with dummy cookies | ⚠️ not run yet |
+| Distinct QueueId per window | ⏳ only verifiable once the queue is live | ⏳ |
+
+On macOS, do a dry run the day before: `--setup`, log in, quit, then launch 3
+windows against `https://www.deportick.com` and check all of them are logged in.
+
+## Caveats
+
+- Deportick has `userSessionsEnabled`. It might invalidate the session in the
+  other windows when you act in one. If so, just log in again in the window that
+  got through.
+- More windows ≠ better: 5 is plenty. Each Chrome instance costs RAM.
+- Running several queue positions most likely goes against Deportick's terms of service.
