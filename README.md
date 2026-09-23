@@ -44,7 +44,7 @@ publishes it. If it isn't out yet, use the info page and click through in each w
 
 ```bash
 # macOS
-bash macos/launch.sh "https://www.deportick.com/event/<event>" 5
+bash macos/launch.sh "https://www.deportick.com/event/<event>" 12
 # Windows
 powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Url "https://www.deportick.com/event/<event>" -Count 5
 ```
@@ -61,6 +61,25 @@ powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Url "https://www.de
 bash macos/launch.sh --reset        # macOS
 powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset   # Windows
 ```
+
+## How many windows
+
+**10–12, 20 at most.** RAM is not the limit on a recent MacBook. These are:
+
+- **Screen.** On macOS the script reads the screen size and tiles ~500px-wide
+  windows in 2 rows. On a 14"/16" MacBook Pro that's 6 side by side. Windows
+  7–12 are stacked over those slots, offset 40px. Past ~12 you can't tell which
+  one got through.
+- **Captchas.** Deportick loads reCAPTCHA and Turnstile. If each window has to
+  solve one to enter the queue, 30 windows means minutes of captchas.
+- **Detection.** Many sessions from one IP make it more likely Queue-it flags you.
+- **One purchase anyway.** Same account, and likely a per-DNI limit.
+
+Queue-it typically randomizes everyone who arrives *before* the sale opens
+(general Queue-it behavior, not verified for this event). In that pre-queue each
+window is one more ticket in the draw. Windows opened *after* 18:00 line up
+first-come-first-served, all at roughly the same spot, so extra windows add
+little. Launch at ~17:55.
 
 ## Fallback: launch without the shared login
 
@@ -89,6 +108,7 @@ so decide early, ideally right when the waiting room opens.
 | Windows open with isolated profiles | ✅ tested | ⚠️ not run yet |
 | Login carries over to cloned windows | ✅ tested with a real account | ⚠️ not run yet |
 | Queue-it cookies cleared, other cookies kept | ✅ tested with dummy cookies | ⚠️ not run yet |
+| Window tiling fits the screen | fixed grid for 1920px | ⚠️ math checked for 14"/16", not run yet |
 | Distinct QueueId per window | ⏳ only verifiable once the queue is live | ⏳ |
 
 On macOS, do a dry run the day before: `--setup`, log in, quit, then launch 3
@@ -99,5 +119,4 @@ windows against `https://www.deportick.com` and check all of them are logged in.
 - Deportick has `userSessionsEnabled`. It might invalidate the session in the
   other windows when you act in one. If so, just log in again in the window that
   got through.
-- More windows ≠ better: 5 is plenty. Each Chrome instance costs RAM.
 - Running several queue positions most likely goes against Deportick's terms of service.

@@ -48,10 +48,19 @@ if [ "$SETUP" = false ] && [ -d "$MAIN" ]; then
     done
 fi
 
-COLS=4; W=480; H=600
+# Tile windows over the screen: as many ~500px-wide columns as fit (Chrome's minimum width)
+# and 2 rows. Windows beyond that fill the same slots again, cascaded 40px so they stay visible.
+BOUNDS=$(osascript -e 'tell application "Finder" to get bounds of window of desktop' 2>/dev/null)
+SCREEN_W=$(echo "$BOUNDS" | cut -d, -f3 | tr -d ' '); SCREEN_W=${SCREEN_W:-1512}
+SCREEN_H=$(echo "$BOUNDS" | cut -d, -f4 | tr -d ' '); SCREEN_H=${SCREEN_H:-982}
+MENU_BAR=40
+COLS=$(( SCREEN_W / 500 )); ROWS=2; SLOTS=$(( COLS * ROWS ))
+W=$(( SCREEN_W / COLS )); H=$(( (SCREEN_H - MENU_BAR) / ROWS ))
+echo "Screen ${SCREEN_W}x${SCREEN_H}: ${SLOTS} windows fit side by side."
 for ((i = 0; i < COUNT; i++)); do
-    X=$(( (i % COLS) * W ))
-    Y=$(( (i / COLS) * (H / 2) ))
+    SLOT=$(( i % SLOTS )); LAYER=$(( i / SLOTS ))
+    X=$(( (SLOT % COLS) * W + LAYER * 40 ))
+    Y=$(( MENU_BAR + (SLOT / COLS) * H + LAYER * 40 ))
     "$CHROME" --user-data-dir="$PROFILES/profile-$i" \
         --no-first-run --no-default-browser-check --disable-sync \
         --window-size=$W,$H --window-position=$X,$Y \
