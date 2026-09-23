@@ -66,7 +66,7 @@ powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset   # Windows
 
 **10–12, 20 at most.** RAM is not the limit on a recent MacBook. These are:
 
-- **Screen.** On macOS the script reads the screen size and tiles ~500px-wide
+- **Screen.** The script reads the screen size (all screens, per-screen scaling on Windows) and tiles ~500px-wide
   windows in 2 rows. On a 14"/16" MacBook Pro that's 6 side by side. Windows
   7–12 are stacked over those slots, offset 40px. Past ~12 you can't tell which
   one got through.
@@ -108,7 +108,7 @@ so decide early, ideally right when the waiting room opens.
 | Windows open with isolated profiles | ✅ tested | ⚠️ not run yet |
 | Login carries over to cloned windows | ✅ tested with a real account | ⚠️ not run yet |
 | Queue-it cookies cleared, other cookies kept | ✅ tested with dummy cookies | ⚠️ not run yet |
-| Window tiling fits the screen | fixed grid for 1920px | ⚠️ math checked for 14"/16", not run yet |
+| Window tiling fits the screen | ✅ tested on 2 screens with mixed scaling (100% + 125%) | ⚠️ math checked for 14"/16", not run yet |
 | Distinct QueueId per window | ⏳ only verifiable once the queue is live | ⏳ |
 
 On macOS, do a dry run the day before: `--setup`, log in, quit, then launch 3

@@ -57,14 +57,52 @@ if (-not $Setup -and (Test-Path $main)) {
     for ($i = 0; $i -lt $Count; $i++) { Clear-QueueCookies (Join-Path $profiles "profile-$i") }
 }
 
-$cols = 4; $w = 480; $h = 600
+# Work areas of every screen, primary first, in the scaled units Chrome uses for
+# --window-position/--window-size (physical pixels / display scale).
+Add-Type @'
+using System; using System.Collections.Generic; using System.Runtime.InteropServices;
+public static class Screens {
+    [StructLayout(LayoutKind.Sequential)] struct RECT { public int L, T, R, B; }
+    [StructLayout(LayoutKind.Sequential)] struct INFO { public int Size; public RECT Mon, Work; public int Flags; }
+    delegate bool Proc(IntPtr m, IntPtr dc, IntPtr r, IntPtr d);
+    [DllImport("user32.dll")] static extern bool SetProcessDpiAwarenessContext(IntPtr v);
+    [DllImport("user32.dll")] static extern bool EnumDisplayMonitors(IntPtr dc, IntPtr clip, Proc p, IntPtr d);
+    [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr m, ref INFO i);
+    [DllImport("shcore.dll")] static extern int GetDpiForMonitor(IntPtr m, int type, out uint x, out uint y);
+    public static List<int[]> WorkAreas() {
+        SetProcessDpiAwarenessContext(new IntPtr(-4));
+        var list = new List<int[]>();
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (m, dc, r, d) => {
+            var i = new INFO { Size = Marshal.SizeOf(typeof(INFO)) };
+            GetMonitorInfo(m, ref i);
+            uint dx, dy; GetDpiForMonitor(m, 0, out dx, out dy);
+            double s = dx / 96.0; var w = i.Work;
+            var a = new[] { (int)(w.L / s), (int)(w.T / s), (int)((w.R - w.L) / s), (int)((w.B - w.T) / s) };
+            if ((i.Flags & 1) != 0) list.Insert(0, a); else list.Add(a);
+            return true;
+        }, IntPtr.Zero);
+        return list;
+    }
+}
+'@
+
+# Tile windows over every screen: as many ~500px-wide columns as fit (Chrome's minimum width)
+# and 2 rows. Windows beyond that fill the same slots again, cascaded 40px.
+$slots = foreach ($a in [Screens]::WorkAreas()) {
+    $cols = [math]::Max(1, [math]::Floor($a[2] / 500))
+    $w = [math]::Floor($a[2] / $cols); $h = [math]::Floor($a[3] / 2)
+    for ($r = 0; $r -lt 2; $r++) {
+        for ($c = 0; $c -lt $cols; $c++) { @{ X = $a[0] + $c * $w; Y = $a[1] + $r * $h; W = $w; H = $h } }
+    }
+}
+Write-Host "$($slots.Count) windows fit side by side across all screens."
+
 for ($i = 0; $i -lt $Count; $i++) {
-    $x = ($i % $cols) * $w
-    $y = [math]::Floor($i / $cols) * [math]::Floor($h / 2)
+    $s = $slots[$i % $slots.Count]; $offset = [math]::Floor($i / $slots.Count) * 40
     Start-Process $chrome -ArgumentList @(
         "--user-data-dir=`"$(Join-Path $profiles "profile-$i")`"",
         "--no-first-run", "--no-default-browser-check", "--disable-sync",
-        "--window-size=$w,$h", "--window-position=$x,$y",
+        "--window-size=$($s.W),$($s.H)", "--window-position=$($s.X + $offset),$($s.Y + $offset)",
         $Url
     )
     Write-Host "[$($i + 1)/$Count] window opened - profile-$i"
