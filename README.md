@@ -62,6 +62,26 @@ bash macos/launch.sh --reset        # macOS
 powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset   # Windows
 ```
 
+## Fallback: launch without the shared login
+
+Every cloned window shares the same Deportick session. If that turns out to be a
+problem (the Queue IDs aren't distinct, windows collapse into one place in line,
+or Deportick logs the other windows out), reset and launch **without** `--setup`.
+Every window then starts from a blank profile, like the reference repo. Log in
+only in the window that gets through.
+
+```bash
+# macOS
+bash macos/launch.sh --reset && bash macos/launch.sh "https://www.deportick.com/event/<event>" 5
+# Windows
+powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset
+powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Url "https://www.deportick.com/event/<event>" -Count 5
+```
+
+Close the current windows first: a reset while they're open fails, because
+Chrome locks the profile files. Relaunching also loses the current places in line,
+so decide early, ideally right when the waiting room opens.
+
 ## Status
 
 | | Windows | macOS |
