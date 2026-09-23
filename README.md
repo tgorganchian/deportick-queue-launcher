@@ -46,7 +46,7 @@ publishes it. If it isn't out yet, use the info page and click through in each w
 # macOS
 bash macos/launch.sh "https://www.deportick.com/event/<event>" 12
 # Windows
-powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Url "https://www.deportick.com/event/<event>" -Count 5
+powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Url "https://www.deportick.com/event/<event>" -Count 12
 ```
 
 **3. In the queue:**
