@@ -2,28 +2,53 @@
 # in the Deportick (Queue-it) waiting room. Checkout is done by hand in whichever window gets through.
 #
 # Usage:
-#   .\launch.ps1 -Setup                                                # log in once
-#   .\launch.ps1 -Url "https://www.deportick.com/event/<event>" -Count 5
-#   .\launch.ps1 -Reset                                                # wipe saved profiles
+#   .\launch.ps1 -Setup                                                # log in using profiles/login
+#   .\launch.ps1 -Count 9                                              # clone that login into 9 windows
+#   .\launch.ps1 -Reset                                                # wipe queue profiles, keep login
 
 param(
-    [string]$Url = "https://www.deportick.com",
+    [string]$Url = "https://www.deportick.com/event/argbenin26",
     [int]$Count = 5,
     [switch]$Setup,
     [switch]$Reset
 )
 
 $chrome = "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
-$profiles = Join-Path $PSScriptRoot "..\profiles"
-$main = Join-Path $profiles "profile-0"
+$profiles = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\profiles"))
+$loginProfilePath = Join-Path $profiles "login"
 
 if ($Reset) {
-    if (Test-Path $profiles) { Remove-Item -Recurse -Force $profiles }
-    Write-Host "Profiles removed."
+    if (Test-Path $profiles) {
+        Get-ChildItem -LiteralPath $profiles -Directory -Filter "profile-*" |
+            ForEach-Object { Remove-Item -Recurse -Force -LiteralPath $_.FullName }
+    }
+    Write-Host "Queue profiles removed; login kept in profiles/login."
     exit 0
 }
+if ($Count -lt 1) { throw "Count must be at least 1." }
+if ($Setup) {
+    Start-Process $chrome -ArgumentList @(
+        "--user-data-dir=`"$loginProfilePath`"",
+        "--no-first-run", "--no-default-browser-check", "https://www.deportick.com"
+    )
+    Write-Host "Login window opened with $loginProfilePath"
+    exit 0
+}
+
+$required = @("Local State", "Default\Network\Cookies", "Default\Local Storage")
+foreach ($item in $required) {
+    if (-not (Test-Path (Join-Path $loginProfilePath $item))) {
+        throw "Login profile is incomplete: missing $item in $loginProfilePath. Run -Setup and sign in first."
+    }
+}
+$chromeProcesses = Get-CimInstance Win32_Process -Filter "name = 'chrome.exe'"
+if ($chromeProcesses | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($loginProfilePath) }) {
+    throw "Close the login Chrome window before launching, so its profile can be copied."
+}
+if ($chromeProcesses | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($profiles) -and $_.CommandLine.Contains('profile-') }) {
+    throw "Close existing launcher windows before launching again; they may hold queue positions."
+}
 New-Item -ItemType Directory -Force $profiles | Out-Null
-if ($Setup) { $Count = 1 }
 
 # Queue-it keeps the queue position in its own cookies. Without them, each window is assigned
 # a fresh QueueId when it enters the waiting room.
@@ -41,21 +66,19 @@ print(f"  {n} queue cookies removed")
     if ($LASTEXITCODE -ne 0) { Write-Host "  WARNING: could not clear queue cookies (Python missing?)" }
 }
 
-# Log in once in profile-0. Every other window is a fresh profile that only receives profile-0's
-# cookies and localStorage (Deportick keeps the login in localStorage, keys "crowder" and
-# "crowder-user"). Chrome must be closed while copying.
-if (-not $Setup -and (Test-Path $main)) {
-    for ($i = 1; $i -lt $Count; $i++) {
-        $dest = Join-Path $profiles "profile-$i"
-        if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
-        New-Item -ItemType Directory -Force (Join-Path $dest "Default\Network") | Out-Null
-        Copy-Item (Join-Path $main "Local State") $dest
-        Copy-Item (Join-Path $main "Default\Network\Cookies") (Join-Path $dest "Default\Network")
-        Copy-Item -Recurse (Join-Path $main "Default\Local Storage") (Join-Path $dest "Default")
-    }
-    Write-Host "Session cloned from profile-0 into $($Count - 1) more profiles."
-    for ($i = 0; $i -lt $Count; $i++) { Clear-QueueCookies (Join-Path $profiles "profile-$i") }
+# Copy only the saved login profile's cookies and localStorage. Never copy Queue-it
+# positions; each new browser profile must enter the waiting room independently.
+for ($i = 0; $i -lt $Count; $i++) {
+    $dest = Join-Path $profiles "profile-$i"
+    if (Test-Path $dest) { Remove-Item -Recurse -Force -ErrorAction Stop -LiteralPath $dest }
+    New-Item -ItemType Directory -Force (Join-Path $dest "Default\Network") | Out-Null
+    Copy-Item (Join-Path $loginProfilePath "Local State") $dest
+    Copy-Item (Join-Path $loginProfilePath "Default\Network\Cookies") (Join-Path $dest "Default\Network")
+    Copy-Item -Recurse (Join-Path $loginProfilePath "Default\Local Storage") (Join-Path $dest "Default")
+    Clear-QueueCookies $dest
 }
+Write-Host "Session cloned from profiles/login into $Count profiles."
+Write-Host "Complete the human captcha manually in every window after it opens."
 
 # Work areas of every screen, primary first, in the scaled units Chrome uses for
 # --window-position/--window-size (physical pixels / display scale).

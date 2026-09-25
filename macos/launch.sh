@@ -4,7 +4,7 @@
 #
 # Usage:
 #   ./launch.sh --setup                                              # log in once
-#   ./launch.sh "https://www.deportick.com/event/<event>" 5
+#   ./launch.sh
 #   ./launch.sh --reset                                              # wipe saved profiles
 
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -23,11 +23,14 @@ if [ "$1" = "--setup" ]; then
     URL="https://www.deportick.com"
     COUNT=1
 else
-    URL="${1:-https://www.deportick.com}"
+    URL="${1:-https://www.deportick.com/event/argbenin26}"
     COUNT="${2:-5}"
 fi
 
 mkdir -p "$PROFILES"
+if [ "$SETUP" = false ]; then
+    echo "Complete the human captcha manually in every window after it opens."
+fi
 
 # Log in once in profile-0. Every other window is a fresh profile that only receives profile-0's
 # cookies and localStorage (Deportick keeps the login in localStorage, keys "crowder" and

@@ -1,2 +1,5 @@
 # Chrome profiles hold the Deportick login token. Never commit them.
 profiles/
+
+# Private observations and response schema for future Queue-it events.
+docs/queue-it-status.md

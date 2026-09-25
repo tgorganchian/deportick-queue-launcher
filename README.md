@@ -13,13 +13,14 @@ Based on the idea behind [fpiantoni/ticketing-Script-Invoker](https://github.com
 - Deportick runs on Crowder with **Queue-it** as its waiting room. Your place in
   line is the Queue-it `QueueId`, stored in Queue-it cookies, not in the
   Deportick session.
-- You log in once (`profile-0`). Each extra window is a fresh Chrome profile
-  that only receives `profile-0`'s cookies and localStorage. Deportick stores
+- You log in once (Windows: `profiles/login`; macOS: `profiles/profile-0`).
+  Each extra window is a fresh Chrome profile
+  that only receives the login profile's cookies and localStorage. Deportick stores
   the login in localStorage (`crowder`, `crowder-user`), not in a cookie.
 - Before launching, Queue-it cookies (`*queue-it*`, `QueueIT*`) are deleted from
   every profile, so each window is assigned a fresh `QueueId`.
-- Profiles live in `profiles/` (gitignored). They contain your login token, so
-  don't share them.
+- All Chrome profiles live in `profiles/` (gitignored). They contain your login
+  token, so don't share them.
 
 ## Requirements
 
@@ -29,8 +30,10 @@ Based on the idea behind [fpiantoni/ticketing-Script-Invoker](https://github.com
 
 ## Usage
 
-**1. Before the sale: log in once.** A single window opens. Log in, then fully
-quit Chrome (on macOS: `Cmd+Q`). Profiles can't be copied while Chrome is running.
+**1. Before the sale: log in once.** A single window opens. Complete the
+Deportick login and confirm that `Mi cuenta` / `Mis entradas` appears. Then fully
+quit that Chrome window (on macOS: `Cmd+Q`). Profiles can't be copied while Chrome
+is running. The launcher creates the login profile inside `profiles/`.
 
 ```bash
 # macOS
@@ -39,28 +42,38 @@ bash macos/launch.sh --setup
 powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Setup
 ```
 
-**2. At ~17:55: launch the windows.** Use the `/event/...` URL once Deportick
-publishes it. If it isn't out yet, use the info page and click through in each window.
+**2. At ~17:55: launch the windows.** The default URL is the
+[Argentina vs Benin event page](https://www.deportick.com/event/argbenin26).
+Deportick redirects each logged-in browser to the Queue-it waiting room with
+its own access token. Opening the bare Queue-it URL directly led to human
+verification or `Acceso restringido` in a live check on 2026-09-24.
+Close every launcher Chrome window before this step; restarting loses any
+existing queue position. Do not commit or share `profiles/`.
 
 ```bash
 # macOS
-bash macos/launch.sh "https://www.deportick.com/event/<event>" 12
+bash macos/launch.sh "https://www.deportick.com/event/argbenin26" 12
 # Windows
-powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Url "https://www.deportick.com/event/<event>" -Count 12
+powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Count 9
 ```
 
 **3. In the queue:**
+- Complete the human captcha **manually in every window**. Each isolated profile
+  gets its own challenge; copying the login does not complete it. The launcher
+  cannot put a window in the queue until its challenge is solved.
 - Check the **Queue ID** shown at the bottom of each waiting room page. They must all be different.
 - Don't refresh, and don't close the windows or re-run the script once they're queued.
   A re-run starts from scratch.
 - Buy in **one** window only. If there's a per-account/DNI limit, parallel orders can get cancelled.
 
-**Reset** (wipe all profiles and the saved login):
+**Reset** (wipe queue profiles; on macOS this also removes the saved login):
 
 ```bash
 bash macos/launch.sh --reset        # macOS
 powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset   # Windows
 ```
+
+On Windows, `-Reset` keeps `profiles/login`, so the next launch can reuse it.
 
 ## How many windows
 
@@ -87,32 +100,25 @@ so stick to the laptop screen there.
 
 Other limits:
 
-- **Captchas.** Deportick loads reCAPTCHA and Turnstile. If each window has to
-  solve one to enter the queue, 30 windows means minutes of captchas.
+- **Captchas.** Every window required a manual human challenge in the live
+  2026-09-24 flow. Budget time for N challenges when choosing N windows.
 - **Detection.** Many sessions from one IP make it more likely Queue-it flags you.
 - **One purchase anyway.** Same account, and likely a per-DNI limit.
 
-Queue-it typically randomizes everyone who arrives *before* the sale opens
-(general Queue-it behavior, not verified for this event). In that pre-queue each
-window is one more ticket in the draw. Windows opened *after* 18:00 line up
-first-come-first-served, all at roughly the same spot, so extra windows add
-little. Launch at ~17:55.
+At 18:00 ART, each Queue ID in the pre-queue is assigned a place by a draw.
+The time estimate shown afterward varies by Queue ID; it is not a fixed part
+of this workflow. Enter early enough to finish every manual captcha before
+the draw.
 
 ## Fallback: launch without the shared login
 
 Every cloned window shares the same Deportick session. If that turns out to be a
 problem (the Queue IDs aren't distinct, windows collapse into one place in line,
-or Deportick logs the other windows out), reset and launch **without** `--setup`.
-Every window then starts from a blank profile, like the reference repo. Log in
-only in the window that gets through.
+or Deportick logs the other windows out), stop using the cloned windows. Log in
+manually in one browser profile and continue there.
 
-```bash
-# macOS
-bash macos/launch.sh --reset && bash macos/launch.sh "https://www.deportick.com/event/<event>" 5
-# Windows
-powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Reset
-powershell -ExecutionPolicy Bypass -File windows\launch.ps1 -Url "https://www.deportick.com/event/<event>" -Count 5
-```
+On Windows or macOS, open the [event page](https://www.deportick.com/event/argbenin26)
+in one normal Chrome profile.
 
 Close the current windows first: a reset while they're open fails, because
 Chrome locks the profile files. Relaunching also loses the current places in line,
@@ -126,7 +132,7 @@ so decide early, ideally right when the waiting room opens.
 | Login carries over to cloned windows | ✅ tested with a real account | ⚠️ not run yet |
 | Queue-it cookies cleared, other cookies kept | ✅ tested with dummy cookies | ⚠️ not run yet |
 | Window tiling fits the screen | ✅ tested on 2 screens with mixed scaling (100% + 125%), 12 and 18 windows | ⚠️ math checked for 14"/16", not run yet |
-| Distinct QueueId per window | ⏳ only verifiable once the queue is live | ⏳ |
+| Distinct QueueId per window | ✅ tested | ⏳ |
 
 On macOS, do a dry run the day before: `--setup`, log in, quit, then launch 3
 windows against `https://www.deportick.com` and check all of them are logged in.
